@@ -1,0 +1,121 @@
+{
+  "name": "nestjs-kafka-es",
+  "version": "0.0.1",
+  "description": "Nestjs event sourcing module with mongodb as event store and kafka as message bus, combined with kafka-mongo connector",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "engines": {
+    "node": ">=12.15.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "test": "jest --forceExit",
+    "test:ci": "jest --forceExit",
+    "test:cov": "jest --coverage --forceExit",
+    "test:e2e": "jest --config ./test/jest-e2e.json --forceExit",
+    "test:watch": "jest --watch",
+    "coverage": "npm run test:cov --forceExit && cat ./coverage/lcov.info | coveralls",
+    "prepare": "npm run build",
+    "commit": "git cz"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/a97001/nestjs-kafka-es.git"
+  },
+  "author": "Kelvin Au",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/a97001/nestjs-kafka-es/issues"
+  },
+  "homepage": "https://github.com/a97001/nestjs-kafka-es#readme",
+  "devDependencies": {
+    "@a97001/nestjs-rdkafka": "git+https://github.com/a97001/nestjs-rdkafka.git",
+    "@commitlint/cli": "9.1.2",
+    "@commitlint/config-conventional": "9.1.2",
+    "@nestjs/common": "7.4.4",
+    "@nestjs/core": "7.4.4",
+    "@nestjs/platform-express": "7.4.4",
+    "@nestjs/testing": "7.4.4",
+    "@semantic-release/changelog": "5.0.1",
+    "@semantic-release/commit-analyzer": "8.0.1",
+    "@semantic-release/git": "9.0.0",
+    "@semantic-release/npm": "7.0.5",
+    "@semantic-release/release-notes-generator": "9.0.1",
+    "@typegoose/typegoose": "^7.4.1",
+    "@types/jest": "26.0.13",
+    "@types/mongodb": "^3.5.27",
+    "@types/mongoose": "5.7.36",
+    "@types/supertest": "2.0.10",
+    "@typescript-eslint/eslint-plugin": "4.6.1",
+    "@typescript-eslint/parser": "4.6.1",
+    "commitizen": "4.2.1",
+    "coveralls": "3.1.0",
+    "cz-conventional-changelog": "3.3.0",
+    "eslint": "7.12.1",
+    "eslint-config-prettier": "^6.12.0",
+    "eslint-plugin-import": "^2.22.1",
+    "husky": "4.3.0",
+    "jest": "26.4.2",
+    "mongodb-memory-server-global": "^6.9.2",
+    "mongoose": "^5.10.12",
+    "nestjs-typegoose": "^7.1.38",
+    "reflect-metadata": "^0.1.13",
+    "rxjs": "6.6.3",
+    "semantic-release": "17.1.1",
+    "supertest": "latest",
+    "ts-jest": "26.3.0",
+    "typescript": "3.9.7"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^7.0.0",
+    "@nestjs/core": "^^7.0.0"
+  },
+  "dependencies": {
+    "class-transformer": "^0.3.1"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": "src",
+    "testRegex": ".spec.ts$",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "coverageDirectory": "../coverage",
+    "testEnvironment": "node"
+  },
+  "release": {
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      "@semantic-release/npm",
+      "@semantic-release/changelog",
+      "@semantic-release/git"
+    ],
+    "branches": [
+      {
+        "name": "main"
+      },
+      {
+        "name": "beta",
+        "channel": "beta"
+      }
+    ],
+    "repositoryUrl": "https://github.com/a97001/nestjs-kafka-es"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm test",
+      "pre-push": "npm test"
+    }
+  }
+}

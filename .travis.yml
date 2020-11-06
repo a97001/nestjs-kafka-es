@@ -1,0 +1,32 @@
+language: node_js
+
+node_js: "12"
+
+install:
+  - npm install
+
+before_script:
+  - docker-compose up -d
+
+jobs:
+  include:
+    - stage: unit tests with coverage
+      script: npm run test:cov
+    - stage: run lint and build
+      script: npm run lint && npm run build
+    - stage: npm run release
+      if: NOT type IN (pull_request)
+      node_js: lts/*
+      script:
+        - npx semantic-release
+      on: 
+        branch: main
+    # - stage: deploy documentation
+    #   if: branch IN (main) AND NOT type IN (pull_request)
+    #   script:
+    #     - git config --global user.name "${GH_NAME}"
+    #     - git config --global user.email "${GH_EMAIL}"
+    #     - echo "machine github.com login ${GH_NAME} password ${GH_TOKEN}" > ~/.netrc
+    #     - GIT_USER="${GH_NAME}" npm deploy
+    #   on: 
+    #     branch: main
