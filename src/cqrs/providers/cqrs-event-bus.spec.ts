@@ -38,11 +38,11 @@ describe('CqrsEventBus', () => {
           "metadata.broker.list": '127.0.0.1:9092',
           "security.protocol": false
         }),
-        getKafkaConnectionProvider({
-          "group.id": 'nestjs-rdkafka-test',
-          "metadata.broker.list": '127.0.0.1:9092',
-          "security.protocol": false
-        })
+        // getKafkaConnectionProvider({
+        //   "group.id": 'nestjs-rdkafka-test',
+        //   "metadata.broker.list": '127.0.0.1:9092',
+        //   "security.protocol": false
+        // })
       ]
     }).compile();
 
