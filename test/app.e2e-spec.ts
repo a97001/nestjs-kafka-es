@@ -4,7 +4,7 @@ import {
     Module,
     Injectable
 } from '@nestjs/common';
-import { KafkaModule } from '../src';
+import { KafkaModule } from 'nestjs-rdkafka';
 
 @Injectable()
 class MockService {
@@ -21,9 +21,25 @@ class MockModule { }
 @Module({
     imports: [
         KafkaModule.forRootAsync({
-            "group.id": 'nestjs-rdkafka-test',
-            "metadata.broker.list": '127.0.0.1:9092',
-            "security.protocol": false
+            consumer: {
+                conf: {
+                    "group.id": 'nestjs-rdkafka-test',
+                    "metadata.broker.list": '127.0.0.1:9092',
+                    "security.protocol": 'plaintext'
+                }
+            },
+            producer: {
+                conf: {
+                    "metadata.broker.list": '127.0.0.1:9092',
+                    "security.protocol": 'plaintext'
+                }
+            },
+            adminClient: {
+                conf: {
+                    "metadata.broker.list": '127.0.0.1:9092',
+                    "security.protocol": 'plaintext'
+                }
+            }
         }),
         MockModule
     ]

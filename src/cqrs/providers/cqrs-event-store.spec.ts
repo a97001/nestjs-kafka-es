@@ -3,6 +3,7 @@ import { TypegooseModule } from 'nestjs-typegoose';
 import { CqrsEvent } from '../models/cqrs-event';
 import { CqrsEventStore } from './cqrs-event-store';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { disconnect } from 'mongoose';
 
 describe('CqrsEvevntStore', () => {
   let provider: CqrsEventStore;
@@ -43,6 +44,7 @@ describe('CqrsEvevntStore', () => {
   });
 
   afterEach(async () => {
+    await disconnect();
     await mongod.stop();
   });
 });

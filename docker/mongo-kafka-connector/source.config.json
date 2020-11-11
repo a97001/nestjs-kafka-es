@@ -1,0 +1,14 @@
+{
+    "name": "mongo-source",
+    "config": {
+        "connector.class": "com.mongodb.kafka.connect.MongoSourceConnector",
+        "connection.uri": "mongodb://mongodb:27017",
+        "topic.prefix": "mongo",
+        "database": "test",
+        "collection": "test_coll1",
+        "copy.existing": false,
+        "poll.await.time.ms": 1000,
+        "publish.full.document.only": true,
+        "pipeline": "[{\"$match\":{\"operationType\":{\"$in\":[\"insert\",\"update\",\"replace\"]}}},{\"$project\":{\"_id\":1,\"fullDocument\":1,\"ns\":1,\"documentKey\":1}}]"
+    }
+}

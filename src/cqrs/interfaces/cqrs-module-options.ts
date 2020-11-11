@@ -1,4 +1,9 @@
 export interface CqrsModuleOptions {
-    replicationFactor: number;
-    'delete.retention.ms': number;
+    eventBusOptions: {
+        kafka: {
+            replicationFactor: number;
+            num_partitions: number;
+            'delete.retention.ms': string;
+        }
+    }
 }

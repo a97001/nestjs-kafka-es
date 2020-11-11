@@ -2,9 +2,9 @@ import { Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from 'nestjs-typegoose/dist/typegoose.decorators';
 import { CqrsEvent } from '../models/cqrs-event';
 import { ReturnModelType } from '@typegoose/typegoose';
-import { KafkaService } from '@a97001/nestjs-rdkafka';
+import { KafkaService } from 'nestjs-rdkafka';
 import { AggregateRoot } from '../models/aggregate-root';
-import { plainToClass } from 'class-transformer'; 
+import { plainToClass } from 'class-transformer';
 import { ClientSession } from 'mongoose';
 import { ConcurrencyViolationError } from '../errors/concurrency-violation-error';
 import { ICqrsEventConstructor } from '../interfaces/ICqrsEventConstructor';
@@ -32,7 +32,7 @@ export class CqrsEventBus {
         if (events.length === 1) {
             const result = await this.cqrsEventModel.updateOne(
                 { aggregateId: events[0].aggregateId, version: { $gt: events[0].version - 1 } },
-                { $setOnInsert:  events[0] },
+                { $setOnInsert: events[0] },
                 { upsert: true }
             ).exec();
             if (result.nUpserted === 0) {
@@ -46,7 +46,7 @@ export class CqrsEventBus {
                 for (const event of events) {
                     const result = await this.cqrsEventModel.updateOne(
                         { aggregateId: event.aggregateId, version: { $gt: event.version - 1 } },
-                        { $setOnInsert:  event },
+                        { $setOnInsert: event },
                         { upsert: true }
                     );
                     if (result.nUpserted === 0) {
@@ -78,11 +78,10 @@ export class CqrsEventBus {
             this.aggregateEventMap.set(eventClass.aggregateType, newEventMap);
             this.kafkaService.subscribeTopic({
                 topic: `es.evt.${eventClass.aggregateType}`,
-                numPartitions: 6,
-                replicationFactor: this.cqrsModuleOptions.replicationFactor,
-                configEntries: [
-                    { name: 'delete.retention.ms', value: this.cqrsModuleOptions["delete.retention.ms"] }
-                ]
+                num_partitions: this.cqrsModuleOptions.eventBusOptions.kafka.num_partitions,
+                replication_factor: this.cqrsModuleOptions.eventBusOptions.kafka.replicationFactor,
+                config: { 'delete.retention.ms': this.cqrsModuleOptions["delete.retention.ms"] }
+
             }, async (receivedMessage) => {
                 const eventPlain = JSON.parse(receivedMessage.value);
                 const eventMapObj = newEventMap.get(eventPlain.name);

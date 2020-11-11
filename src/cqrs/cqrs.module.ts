@@ -5,7 +5,8 @@ import { TypegooseModule } from 'nestjs-typegoose';
 import { CqrsEvent } from './models/cqrs-event';
 import { CqrsEventStore } from './providers/cqrs-event-store';
 import { CqrsModuleOptions } from './interfaces/cqrs-module-options';
-import { KafkaModule } from '@a97001/nestjs-rdkafka';
+import { KafkaModule } from 'nestjs-rdkafka';
+import { getCqrsConfigProvider } from './providers/cqrs-config-provider';
 
 @Global()
 @Module({
@@ -18,18 +19,17 @@ import { KafkaModule } from '@a97001/nestjs-rdkafka';
   providers: [CqrsEventBus, CqrsCommandBus, CqrsEventStore]
 })
 export class CqrsModule {
-  static forRoot(options: CqrsModuleOptions): DynamicModule {
+  static forRootAsync(options: CqrsModuleOptions): DynamicModule {
+    const cqrsConfigProvider = getCqrsConfigProvider(options);
     return {
       module: CqrsModule,
-      providers: [{
-        provide: 'CqrsModuleOptions',
-        useValue: options,
-      },
+      providers: [
+        cqrsConfigProvider,
         CqrsEventBus,
         CqrsCommandBus,
         CqrsEventStore
       ],
-      exports: [CqrsEventBus, CqrsCommandBus, CqrsEventStore]
+      exports: [cqrsConfigProvider, CqrsEventBus, CqrsCommandBus, CqrsEventStore]
     }
   }
 }

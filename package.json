@@ -1,7 +1,7 @@
 {
   "name": "nestjs-kafka-es",
   "version": "0.0.1",
-  "description": "Nestjs event sourcing module with mongodb as event store and kafka as message bus, combined with kafka-mongo connector",
+  "description": "NestJS event sourcing module with mongodb as event store and kafka as message bus, combined with kafka-mongo connector",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "engines": {
@@ -10,12 +10,12 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "test": "jest --forceExit",
-    "test:ci": "jest --forceExit",
-    "test:cov": "jest --coverage --forceExit",
-    "test:e2e": "jest --config ./test/jest-e2e.json --forceExit",
+    "test": "jest",
+    "test:ci": "jest",
+    "test:cov": "jest --coverage",
+    "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:watch": "jest --watch",
-    "coverage": "npm run test:cov --forceExit && cat ./coverage/lcov.info | coveralls",
+    "coverage": "npm run test:cov && cat ./coverage/lcov.info | coveralls",
     "prepare": "npm run build",
     "commit": "git cz"
   },
@@ -30,7 +30,6 @@
   },
   "homepage": "https://github.com/a97001/nestjs-kafka-es#readme",
   "devDependencies": {
-    "@a97001/nestjs-rdkafka": "git+https://github.com/a97001/nestjs-rdkafka.git",
     "@commitlint/cli": "9.1.2",
     "@commitlint/config-conventional": "9.1.2",
     "@nestjs/common": "7.4.4",
@@ -72,7 +71,8 @@
     "@nestjs/core": "^^7.0.0"
   },
   "dependencies": {
-    "class-transformer": "^0.3.1"
+    "class-transformer": "^0.3.1",
+    "nestjs-rdkafka": "^1.0.2"
   },
   "jest": {
     "moduleFileExtensions": [
@@ -86,7 +86,12 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "collectCoverage": true,
+    "coverageReporters": [
+      "text",
+      "lcov"
+    ]
   },
   "release": {
     "plugins": [
@@ -112,5 +117,10 @@
       "path": "./node_modules/cz-conventional-changelog"
     }
   },
-  "husky": {}
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm test",
+      "pre-push": "npm test"
+    }
+  }
 }
