@@ -24,7 +24,7 @@ export class CqrsEvent implements ICqrsMessage {
             this.createdAt = new Date();
         }
         this.aggregateId = aggregateId;
-        this.aggregateType = this.aggregateType;
+        // this.aggregateType = this.aggregateType;
         this.createdAt = new Date();
         this.version = version;
     }

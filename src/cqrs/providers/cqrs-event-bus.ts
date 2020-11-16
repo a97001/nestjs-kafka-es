@@ -42,7 +42,6 @@ export class CqrsEventBus {
             const session: ClientSession = await tempCqrsEventModel.startSession();
             session.startTransaction();
             try {
-                console.log('In transaction....');
                 for (const event of events) {
                     const result = await this.cqrsEventModel.updateOne(
                         { aggregateId: event.aggregateId, version: { $gt: event.version - 1 } },
@@ -73,11 +72,12 @@ export class CqrsEventBus {
     }
 
     public registerEventHandler(eventClass: ICqrsEventConstructor, handler: ICqrsEventHandler) {
-        if (!this.aggregateEventMap.has(eventClass.aggregateType)) {
+        const eventInstance = new eventClass('', 0);
+        if (!this.aggregateEventMap.has(eventInstance.aggregateType)) {
             const newEventMap = new Map<string, { eventClass: any, handler: any }>();
-            this.aggregateEventMap.set(eventClass.aggregateType, newEventMap);
+            this.aggregateEventMap.set(eventInstance.aggregateType, newEventMap);
             this.kafkaService.subscribeTopic({
-                topic: `es.evt.${eventClass.aggregateType}`,
+                topic: `es.evt.${eventInstance.aggregateType}`,
                 num_partitions: this.cqrsModuleOptions.eventBusOptions.kafka.num_partitions,
                 replication_factor: this.cqrsModuleOptions.eventBusOptions.kafka.replicationFactor,
                 config: { 'delete.retention.ms': this.cqrsModuleOptions["delete.retention.ms"] }
@@ -94,9 +94,9 @@ export class CqrsEventBus {
                 }
             });
         }
-        if (this.aggregateEventMap.get(eventClass.aggregateType).has(eventClass.name)) {
+        if (this.aggregateEventMap.get(eventInstance.aggregateType).has(eventClass.name)) {
             throw new ReferenceError(`Event "${eventClass.name}" already registered!`)
         }
-        this.aggregateEventMap.get(eventClass.aggregateType).set(eventClass.name, { eventClass, handler });
+        this.aggregateEventMap.get(eventInstance.aggregateType).set(eventClass.name, { eventClass, handler });
     }
 }

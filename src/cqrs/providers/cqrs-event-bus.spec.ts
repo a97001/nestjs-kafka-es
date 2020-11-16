@@ -6,6 +6,8 @@ import { CqrsEventBus } from './cqrs-event-bus';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { CqrsModule } from '../cqrs.module';
 import { disconnect } from 'mongoose';
+import { ICqrsEventHandler } from '../interfaces/ICqrsEventHandler';
+import { ICqrsEventConstructor } from '../interfaces/ICqrsEventConstructor';
 
 describe('CqrsEventBus', () => {
   let provider: CqrsEventBus;
@@ -22,8 +24,13 @@ describe('CqrsEventBus', () => {
       providers: [CqrsEventBus],
       imports: [
         CqrsModule.forRootAsync({
-          replicationFactor: 1,
-          "delete.retention.ms": '1000000'
+          eventBusOptions: {
+            kafka: {
+              replicationFactor: 1,
+              num_partitions: 1,
+              'delete.retention.ms': '1000000'
+            }
+          }
         }),
         TypegooseModule.forRootAsync({
           useFactory: async () => {
@@ -69,6 +76,55 @@ describe('CqrsEventBus', () => {
 
   it('should be defined', () => {
     expect(provider).toBeDefined();
+  });
+
+  it('should execute event (no event)', async () => {
+    expect(await provider.execute([])).not.toThrow;
+  });
+
+  it('should execute event (single event)', async () => {
+    expect(await provider.execute([new CqrsEvent('aggregateId', 0)])).not.toThrow;
+  });
+
+  it('should execute event (multiple events)', async () => {
+    expect(await provider.execute([new CqrsEvent('aggregateId', 0), new CqrsEvent('aggregateId', 1)])).not.toThrow;
+  });
+
+  it('should register event handler', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    class ExampleCqrsEvent extends CqrsEvent {
+      public readonly aggregateType: string = this.constructor.name;;
+      constructor(aggregateId: string, version: number) {
+        super(aggregateId, version);
+      }
+    }
+    class ExampleEventHandler implements ICqrsEventHandler {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      async execute(cqrsEvent: ExampleCqrsEvent): Promise<void> {
+        return;
+      }
+    }
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    expect(provider.registerEventHandler(ExampleCqrsEvent, new ExampleEventHandler()));
+  });
+
+  it('should throw error when register event handler twice', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    class ExampleCqrsEvent extends CqrsEvent {
+      public readonly aggregateType: string = this.constructor.name;;
+      constructor(aggregateId: string, version: number) {
+        super(aggregateId, version);
+      }
+    }
+    class ExampleEventHandler implements ICqrsEventHandler {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      async execute(cqrsEvent: ExampleCqrsEvent): Promise<void> {
+        return;
+      }
+    }
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    provider.registerEventHandler(ExampleCqrsEvent, new ExampleEventHandler())
+    expect(() => provider.registerEventHandler(ExampleCqrsEvent, new ExampleEventHandler())).toThrow(ReferenceError);
   });
 
   afterEach(async () => {
