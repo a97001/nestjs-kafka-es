@@ -14,7 +14,7 @@ describe('AggregateRoot', () => {
     expect(AggregateRoot).toBeDefined();
   });
 
-  it('should load from history', () => {
-    expect(exampleAggregate.loadFromHistory([new CqrsEvent('', 0)]));
-  })
+  // it('should load from history', () => {
+  //   expect(exampleAggregate.loadFromHistory([new CqrsEvent('', 0)]));
+  // })
 });
