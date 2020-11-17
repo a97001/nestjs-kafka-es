@@ -1,5 +1,5 @@
 import { CqrsEvent } from "../models/cqrs-event";
 
-export interface ICqrsEventHandler {
-    execute(event: CqrsEvent): Promise<void>;
+export interface ICqrsEventHandler<T extends CqrsEvent> {
+    handle(event: T): Promise<void>;
 }

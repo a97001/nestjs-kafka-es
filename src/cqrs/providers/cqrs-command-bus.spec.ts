@@ -26,7 +26,7 @@ describe('CqrsCommandBus', () => {
         super(content);
       }
     }
-    class ExampleCommandHandler implements ICqrsCommandHandler {
+    class ExampleCommandHandler implements ICqrsCommandHandler<ExapmleCommand, void> {
       async execute(command: ExapmleCommand): Promise<void> { return; };
     }
     expect(provider.registerCommandHandler(ExapmleCommand, new ExampleCommandHandler()));
@@ -40,7 +40,7 @@ describe('CqrsCommandBus', () => {
         super(content);
       }
     }
-    class ExampleCommandHandler implements ICqrsCommandHandler {
+    class ExampleCommandHandler implements ICqrsCommandHandler<ExapmleCommand, void> {
       async execute(command: ExapmleCommand): Promise<void> { return; };
     }
     provider.registerCommandHandler(ExapmleCommand, new ExampleCommandHandler());
@@ -55,7 +55,7 @@ describe('CqrsCommandBus', () => {
         super(content);
       }
     }
-    class ExampleCommandHandler implements ICqrsCommandHandler {
+    class ExampleCommandHandler implements ICqrsCommandHandler<ExapmleCommand, void> {
       async execute(command: ExapmleCommand): Promise<void> { return; };
     }
     provider.registerCommandHandler(ExapmleCommand, new ExampleCommandHandler());

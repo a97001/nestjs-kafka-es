@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AggregateRoot } from '../models/aggregate-root';
+import { AggregateRoot } from '@nestjs/cqrs';
 import { CqrsEventStore } from './cqrs-event-store';
 
 @Injectable()

@@ -8,6 +8,7 @@ import { disconnect } from 'mongoose';
 describe('CqrsEvevntStore', () => {
   let provider: CqrsEventStore;
   let mongod: MongoMemoryServer;
+  let module: TestingModule;
 
   beforeEach(async () => {
     mongod = new MongoMemoryServer({
@@ -15,7 +16,7 @@ describe('CqrsEvevntStore', () => {
         version: '4.2.10'
       }
     });
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [CqrsEventStore],
       imports: [
         TypegooseModule.forRootAsync({
@@ -43,8 +44,13 @@ describe('CqrsEvevntStore', () => {
     expect(provider).toBeDefined();
   });
 
+  it('should get events for aggregate', async () => {
+    expect(await provider.getEventsForAggregate('no this id')).toEqual([]);
+  });
+
   afterEach(async () => {
     await disconnect();
     await mongod.stop();
+    await module.close();
   });
 });

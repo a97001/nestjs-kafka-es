@@ -7,6 +7,7 @@ import { CqrsEventStore } from './providers/cqrs-event-store';
 import { CqrsModuleOptions } from './interfaces/cqrs-module-options';
 import { KafkaModule } from 'nestjs-rdkafka';
 import { getCqrsConfigProvider } from './providers/cqrs-config-provider';
+import { CqrsEventPublisher } from './providers/cqrs-event-publisher';
 
 @Global()
 @Module({
@@ -16,7 +17,7 @@ import { getCqrsConfigProvider } from './providers/cqrs-config-provider';
     ]),
     KafkaModule
   ],
-  providers: [CqrsEventBus, CqrsCommandBus, CqrsEventStore]
+  providers: [CqrsEventBus, CqrsCommandBus, CqrsEventStore, CqrsEventPublisher]
 })
 export class CqrsModule {
   static forRootAsync(options: CqrsModuleOptions): DynamicModule {

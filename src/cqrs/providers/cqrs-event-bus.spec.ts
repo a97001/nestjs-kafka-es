@@ -7,10 +7,36 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { CqrsModule } from '../cqrs.module';
 import { disconnect } from 'mongoose';
 import { ICqrsEventHandler } from '../interfaces/ICqrsEventHandler';
-import { ICqrsEventConstructor } from '../interfaces/ICqrsEventConstructor';
+import { EventsHandler } from '../decorators/events-handler.decorator';
+import { ConcurrencyViolationError } from '../errors/concurrency-violation-error';
+
+class ExampleCqrsEvent extends CqrsEvent {
+  public readonly _id: string;
+  public readonly aggregateType: string = this.constructor.name;
+  public readonly createdAt: Date;
+  constructor(public readonly aggregateId: string, public readonly version: number) {
+    super(aggregateId, version);
+  }
+}
+
+@EventsHandler(ExampleCqrsEvent)
+class ExampleEventHandler implements ICqrsEventHandler<ExampleCqrsEvent> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async handle(cqrsEvent: ExampleCqrsEvent): Promise<void> {
+    return;
+  }
+}
+
+@EventsHandler(ExampleCqrsEvent)
+class NotInitExampleEventHandler implements ICqrsEventHandler<ExampleCqrsEvent> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async handle(cqrsEvent: ExampleCqrsEvent): Promise<void> {
+    return;
+  }
+}
 
 describe('CqrsEventBus', () => {
-  let provider: CqrsEventBus;
+  let provider: CqrsEventBus<ExampleCqrsEvent>;
   let mongod: MongoMemoryServer;
   let module: TestingModule;
 
@@ -21,7 +47,7 @@ describe('CqrsEventBus', () => {
       }
     });
     module = await Test.createTestingModule({
-      providers: [CqrsEventBus],
+      providers: [CqrsEventBus, ExampleEventHandler],
       imports: [
         CqrsModule.forRootAsync({
           eventBusOptions: {
@@ -71,60 +97,41 @@ describe('CqrsEventBus', () => {
       ]
     }).compile();
 
-    provider = module.get<CqrsEventBus>(CqrsEventBus);
+    provider = module.get<CqrsEventBus<ExampleCqrsEvent>>(CqrsEventBus);
   });
 
   it('should be defined', () => {
     expect(provider).toBeDefined();
   });
 
-  it('should execute event (no event)', async () => {
-    expect(await provider.execute([])).not.toThrow;
+  it('should publish event', async () => {
+    expect(await provider.publish(new ExampleCqrsEvent('aggregateId1', 0))).not.toThrow;
   });
 
-  it('should execute event (single event)', async () => {
-    expect(await provider.execute([new CqrsEvent('aggregateId', 0)])).not.toThrow;
+  it('should throw ConcurrencyViolationError when publish event with older version', async () => {
+    await provider.publish(new ExampleCqrsEvent('aggregateId2', 0))
+    await expect(provider.publish(new ExampleCqrsEvent('aggregateId2', 0))).rejects.toThrow(ConcurrencyViolationError);
+  });
+
+  it('should publish all event (no event)', async () => {
+    expect(await provider.publishAll([])).not.toThrow;
   });
 
   it('should execute event (multiple events)', async () => {
-    expect(await provider.execute([new CqrsEvent('aggregateId', 0), new CqrsEvent('aggregateId', 1)])).not.toThrow;
+    expect(await provider.publishAll([new ExampleCqrsEvent('aggregateId3', 0), new ExampleCqrsEvent('aggregateId3', 1)])).not.toThrow;
+  });
+
+  it('should throw ConcurrencyViolationError when publish multiple events with older version', async () => {
+    await expect(provider.publishAll([new ExampleCqrsEvent('aggregateId4', 0), new ExampleCqrsEvent('aggregateId4', 0)]))
+      .rejects.toThrow(ConcurrencyViolationError);
   });
 
   it('should register event handler', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    class ExampleCqrsEvent extends CqrsEvent {
-      public readonly aggregateType: string = this.constructor.name;;
-      constructor(aggregateId: string, version: number) {
-        super(aggregateId, version);
-      }
-    }
-    class ExampleEventHandler implements ICqrsEventHandler {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      async execute(cqrsEvent: ExampleCqrsEvent): Promise<void> {
-        return;
-      }
-    }
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    expect(provider.registerEventHandler(ExampleCqrsEvent, new ExampleEventHandler()));
+    expect(provider.register([ExampleEventHandler]));
   });
 
   it('should throw error when register event handler twice', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    class ExampleCqrsEvent extends CqrsEvent {
-      public readonly aggregateType: string = this.constructor.name;;
-      constructor(aggregateId: string, version: number) {
-        super(aggregateId, version);
-      }
-    }
-    class ExampleEventHandler implements ICqrsEventHandler {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      async execute(cqrsEvent: ExampleCqrsEvent): Promise<void> {
-        return;
-      }
-    }
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    provider.registerEventHandler(ExampleCqrsEvent, new ExampleEventHandler())
-    expect(() => provider.registerEventHandler(ExampleCqrsEvent, new ExampleEventHandler())).toThrow(ReferenceError);
+    expect(() => provider.register([ExampleEventHandler, ExampleEventHandler])).toThrow(ReferenceError);
   });
 
   afterEach(async () => {

@@ -1,5 +1,5 @@
+import { AggregateRoot } from '@nestjs/cqrs';
 import { Test, TestingModule } from '@nestjs/testing';
-import { AggregateRoot } from '../models/aggregate-root';
 import { Repository } from './repository';
 
 describe('Repository', () => {

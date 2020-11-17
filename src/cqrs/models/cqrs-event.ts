@@ -19,10 +19,10 @@ export class CqrsEvent implements ICqrsMessage {
     public readonly version: number;
 
     constructor(aggregateId: string, version: number) {
-        if (!this._id) {
-            this._id = new ObjectId().toHexString();
-            this.createdAt = new Date();
-        }
+        // if (!this._id) {
+        this._id = new ObjectId().toHexString();
+        this.createdAt = new Date();
+        // }
         this.aggregateId = aggregateId;
         // this.aggregateType = this.aggregateType;
         this.createdAt = new Date();
