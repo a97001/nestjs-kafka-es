@@ -9,10 +9,11 @@ import { disconnect } from 'mongoose';
 import { ICqrsEventHandler } from '../interfaces/ICqrsEventHandler';
 import { EventsHandler } from '../decorators/events-handler.decorator';
 import { ConcurrencyViolationError } from '../errors/concurrency-violation-error';
+import { EventNotRegisteredError } from '../errors/event-not-registered-error';
 
 class ExampleCqrsEvent extends CqrsEvent {
   public readonly _id: string;
-  public readonly aggregateType: string = this.constructor.name;
+  public readonly aggregateType: string = 'Example';
   public readonly createdAt: Date;
   constructor(public readonly aggregateId: string, public readonly version: number) {
     super(aggregateId, version);
@@ -127,11 +128,27 @@ describe('CqrsEventBus', () => {
   });
 
   it('should register event handler', async () => {
-    expect(provider.register([ExampleEventHandler]));
+    expect(provider.registerEventHandler(ExampleCqrsEvent, new ExampleEventHandler()));
   });
 
   it('should throw error when register event handler twice', async () => {
-    expect(() => provider.register([ExampleEventHandler, ExampleEventHandler])).toThrow(ReferenceError);
+    provider.registerEventHandler(ExampleCqrsEvent, new ExampleEventHandler())
+    expect(() => provider.registerEventHandler(ExampleCqrsEvent, new ExampleEventHandler())).toThrow(ReferenceError);
+  });
+
+  it('should hanle event', async () => {
+    provider.registerEventHandler(ExampleCqrsEvent, new ExampleEventHandler());
+    const exampleMessage = {
+      key: 'key', value: JSON.stringify(new ExampleCqrsEvent('aggregateId4', 0)), timestamp: new Date().getTime(), headers: {}
+    };
+    expect(await provider.handleEvent(exampleMessage)).not.toThrow;
+  });
+
+  it('should hanle event if event has no handler registered', async () => {
+    const exampleMessage = {
+      key: 'key', value: JSON.stringify(new ExampleCqrsEvent('aggregateId4', 0)), timestamp: new Date().getTime(), headers: {}
+    };
+    await expect(provider.handleEvent(exampleMessage)).rejects.toThrow(EventNotRegisteredError);
   });
 
   afterEach(async () => {

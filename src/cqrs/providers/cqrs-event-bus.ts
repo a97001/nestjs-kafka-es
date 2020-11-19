@@ -10,7 +10,7 @@
 // import { ICqrsEventHandler } from '../interfaces/ICqrsEventHandler';
 // import { CqrsModuleOptions } from '../interfaces/cqrs-module-options';
 
-import { Injectable, OnModuleDestroy, Type } from "@nestjs/common";
+import { Inject, Injectable, NotImplementedException, OnModuleDestroy, Type } from "@nestjs/common";
 import { ModuleRef } from "@nestjs/core";
 import { ObservableBus } from "@nestjs/cqrs";
 import { ReturnModelType } from "@typegoose/typegoose";
@@ -25,6 +25,11 @@ import { ICqrsEventHandler } from "../interfaces/ICqrsEventHandler";
 import { CqrsEvent } from "../models/cqrs-event";
 import { CqrsCommandBus } from "./cqrs-command-bus";
 import { filter } from 'rxjs/operators';
+import { plainToClass } from "class-transformer";
+import { ICqrsEventConstructor } from "../interfaces/ICqrsEventConstructor";
+import { CqrsModuleOptions } from "../interfaces/cqrs-module-options";
+import { KafkaService } from "nestjs-rdkafka";
+import { EventNotRegisteredError } from "../errors/event-not-registered-error";
 
 // @Injectable()
 // export class CqrsEventBus {
@@ -117,28 +122,25 @@ import { filter } from 'rxjs/operators';
 // }
 
 
-export type EventHandlerType<EventBase extends CqrsEvent = CqrsEvent> = Type<ICqrsEventHandler<EventBase>>;
+// export type EventHandlerType<EventBase extends CqrsEvent = CqrsEvent> = Type<ICqrsEventHandler<EventBase>>;
 
 @Injectable()
-export class CqrsEventBus<EventBase extends CqrsEvent> extends ObservableBus<EventBase> implements ICqrsEventBus<EventBase>, OnModuleDestroy {
-    protected getEventName: (event: EventBase) => string;
-    protected readonly subscriptionMap: Map<string, Subscription>;
-
-    // private _publisher: IEventPublisher<EventBase>;
+export class CqrsEventBus<EventBase extends CqrsEvent> implements ICqrsEventBus<EventBase> {
+    // protected getEventName: (event: EventBase) => string;
+    protected readonly subscriptionMap = new Map<string, Map<string, { eventClass: ICqrsEventConstructor, handler: ICqrsEventHandler<CqrsEvent> }>>();
 
     constructor(
-        private readonly cqrsCommandBus: CqrsCommandBus,
-        private readonly moduleRef: ModuleRef,
+        @Inject('CqrsModuleOptions') private readonly cqrsModuleOptions: CqrsModuleOptions,
         @InjectModel(CqrsEvent) private readonly cqrsEventModel: ReturnModelType<typeof CqrsEvent>,
+        private readonly kafkaService: KafkaService
     ) {
-        super();
-        this.subscriptionMap = new Map();
-        this.getEventName = defaultGetEventName;
+        // this.subscriptionMap = new Map();
+        // this.getEventName = defaultGetEventName;
     }
 
-    onModuleDestroy() {
-        Array.from(this.subscriptionMap.values()).forEach((subscription) => subscription.unsubscribe());
-    }
+    // onModuleDestroy() {
+    //     Array.from(this.subscriptionMap.values()).forEach((subscription) => subscription.unsubscribe());
+    // }
 
     async publish<T extends EventBase>(event: T): Promise<void> {
         const result = await this.cqrsEventModel.updateOne(
@@ -187,37 +189,34 @@ export class CqrsEventBus<EventBase extends CqrsEvent> extends ObservableBus<Eve
         }
     }
 
-    bind(handler: ICqrsEventHandler<EventBase>, name: string) {
-        const stream$ = name ? this.ofEventName(name) : this.subject$;
-        const subscription = stream$.subscribe((event) => handler.handle(event));
-        if (this.subscriptionMap.has(name)) {
-            throw new ReferenceError(`Event "${name}" already registered to ${this.constructor.name}!`) 
+    public async handleEvent(receivedMessage: { key: string, value: any, timestamp: number, headers: any }): Promise<void> {
+        const eventPlain: CqrsEvent = JSON.parse(receivedMessage.value);
+        const eventMapObj = this.subscriptionMap.get(eventPlain.aggregateType)?.get(eventPlain.name);
+        if (eventMapObj) {
+            const eventToBeExec = plainToClass(eventMapObj.eventClass, eventPlain);
+            await eventMapObj.handler.handle(eventToBeExec);
+        } else {
+            throw new EventNotRegisteredError(`CQRS Event ${eventPlain.name} has not been registered`);
         }
-        this.subscriptionMap.set(name, subscription);
     }
 
-    register(handlers: EventHandlerType<EventBase>[] = []) {
-        handlers.forEach((handler) => this.registerHandler(handler));
+    public registerEventHandler(eventClass: ICqrsEventConstructor, handler: ICqrsEventHandler<CqrsEvent>) {
+        const eventInstance = new eventClass('', 0);
+        if (!this.subscriptionMap.has(eventInstance.aggregateType)) {
+            const newEventMap = new Map<string, { eventClass: ICqrsEventConstructor, handler: ICqrsEventHandler<CqrsEvent> }>();
+            this.subscriptionMap.set(eventInstance.aggregateType, newEventMap);
+            this.kafkaService.subscribeTopic({
+                topic: `es.evt.${eventInstance.aggregateType}`,
+                num_partitions: this.cqrsModuleOptions.eventBusOptions.kafka.num_partitions,
+                replication_factor: this.cqrsModuleOptions.eventBusOptions.kafka.replicationFactor,
+                config: { 'delete.retention.ms': this.cqrsModuleOptions["delete.retention.ms"] }
+
+            }, this.handleEvent);
+        }
+        if (this.subscriptionMap.get(eventInstance.aggregateType).has(eventClass.name)) {
+            throw new ReferenceError(`Event "${eventClass.name}" already registered!`)
+        }
+        this.subscriptionMap.get(eventInstance.aggregateType).set(eventClass.name, { eventClass, handler });
     }
 
-    protected registerHandler(handler: EventHandlerType<EventBase>) {
-        const instance = this.moduleRef.get(handler, { strict: false });
-        // if (!instance) {
-        //     return;
-        // }
-        const eventsNames = this.reflectEventsNames(handler);
-        eventsNames.map((event) =>
-            this.bind(instance as ICqrsEventHandler<EventBase>, event.name),
-        );
-    }
-
-    protected ofEventName(name: string) {
-        return this.subject$.pipe(filter((event) => this.getEventName(event) === name));
-    }
-
-    private reflectEventsNames(
-        handler: EventHandlerType<EventBase>,
-    ): FunctionConstructor[] {
-        return Reflect.getMetadata(EVENTS_HANDLER_METADATA, handler);
-    }
 }

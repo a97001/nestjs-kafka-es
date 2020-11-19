@@ -13,6 +13,9 @@ export class CqrsEvent implements ICqrsMessage {
     public readonly aggregateType: string;
 
     @prop()
+    public readonly name: string = this.constructor.name;
+
+    @prop()
     public readonly createdAt: Date;
 
     @prop()
