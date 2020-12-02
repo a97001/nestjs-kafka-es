@@ -4,14 +4,14 @@ import { CqrsCommand } from '../models/cqrs-command';
 import { CqrsCommandBus } from './cqrs-command-bus';
 
 describe('CqrsCommandBus', () => {
-  let provider: CqrsCommandBus;
+  let provider: CqrsCommandBus<CqrsCommand, void>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [CqrsCommandBus],
     }).compile();
 
-    provider = module.get<CqrsCommandBus>(CqrsCommandBus);
+    provider = module.get<CqrsCommandBus<CqrsCommand, void>>(CqrsCommandBus);
   });
 
   it('should be defined', () => {
