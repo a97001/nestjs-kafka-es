@@ -125,7 +125,7 @@ import { EventNotRegisteredError } from "../errors/event-not-registered-error";
 // export type EventHandlerType<EventBase extends CqrsEvent = CqrsEvent> = Type<ICqrsEventHandler<EventBase>>;
 
 @Injectable()
-export class CqrsEventBus<EventBase extends CqrsEvent> implements ICqrsEventBus<EventBase> {
+export class CqrsEventBus<EventBase extends CqrsEvent = CqrsEvent> implements ICqrsEventBus<EventBase> {
     // protected getEventName: (event: EventBase) => string;
     protected readonly subscriptionMap = new Map<string, Map<string, { eventClass: ICqrsEventConstructor, handler: ICqrsEventHandler<CqrsEvent> }>>();
 

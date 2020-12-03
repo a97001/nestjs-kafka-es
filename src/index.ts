@@ -4,5 +4,5 @@ export * from './cqrs/providers/cqrs-event-bus';
 export * from './cqrs/providers/cqrs-event-store';
 export * from './cqrs/providers/repository';
 export * from './cqrs/interfaces/cqrs-module-options';
-export { AggregateRoot } from '@nestjs/cqrs';
+export { AggregateRoot } from './cqrs/models/aggregate-root';
 export * from './cqrs/decorators/events-handler.decorator';
